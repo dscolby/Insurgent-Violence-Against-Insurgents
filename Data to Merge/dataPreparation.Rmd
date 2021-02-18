@@ -1,7 +1,7 @@
 ---
 title: "data_preparation_script"
 author: "Darren Colby"
-date: "2/9/2021"
+date: "2/17/2021"
 purpose: "To clean and recode the Northern Ireland Loyalty Study data so that
    it can be merged with xSub data and be analyzed."
 output: html_document
@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(asciiSetupReader)
 library(dplyr)
 library(data.table)
+library(tidyverse)
 
 setwd("Z:/Social Networks Northern Ireland/Data to Merge")
 ```
@@ -241,9 +242,80 @@ final_data$year <- as.numeric(substr(final_data$date, 1,
 final_data$yearsSince1969 <- final_data$year - 1969
 ```
 
+## Add a column for attacks per year
+
+```{r}
+  
+  attacks <- final_data %>%
+    group_by(name, year) %>%
+    summarise(events = sum(as.numeric(initGovt) + as.numeric(initCiv)))
+
+  attacks <- attacks %>%
+    arrange(year)
+
+  Armagh <- attacks %>%
+    filter(name == "Armagh") %>%
+    mutate(lag = lag(events))
+
+  belfastEast <- attacks %>%
+    filter(name == "belfast East") %>%
+    mutate(lag = lag(events))
+
+  belfastNorth <- attacks %>%
+    filter(name == "Belfast North") %>%
+    mutate(lag = lag(events))
+
+  belfastWest <- attacks %>%
+    filter(name == "Belfast West") %>%
+    mutate(lag = lag(events))
+
+  Fermanagh <- attacks %>%
+    filter(name == "Fermanagh and South Tyrone") %>%
+    mutate(lag = lag(events))
+
+  Londonderry <- attacks %>%
+    filter(name == "Londonderry") %>%
+    mutate(lag = lag(events))
+
+  midUlster <- attacks %>%
+    filter(name == "Mid Ulster") %>%
+    mutate(lag = lag(events))
+
+  northAntrim <- attacks %>%
+    filter(name == "North Antrim") %>%
+    mutate(lag = lag(events))
+
+  southAntrim <- attacks %>%
+    filter(name == "South Antrim") %>%
+    mutate(lag = lag(events))
+
+  northDown <- attacks %>%
+    filter(name == "North Down") %>%
+    mutate(lag = lag(events))
+
+  belfastSouth <- attacks %>%
+    filter(name == "Belfast South") %>%
+    mutate(lag = lag(events))
+
+  southDown <- attacks %>%
+    filter(name == "South Down") %>%
+    mutate(lag = lag(events))
+
+  attacks <- bind_rows(Armagh, belfastEast, belfastNorth, belfastWest, Fermanagh,
+                      Londonderry, midUlster, northAntrim, southAntrim, 
+                      northDown, belfastSouth, southDown) %>%
+                      select(-events)
+
+  final_data <- merge(final_data, attacks, by = c("name", "year")) 
+  
+  names(final_data)[names(final_data) == "lag"] <- "attacks"
+  
+
+```
+
+
 
 ## Finally, write the data to a csv file
-
 
 ```{r Write the data to a csv file}
 write.csv(final_data, file = 'finalData.csv')
