@@ -258,7 +258,7 @@ final_data$yearsSince1969 <- final_data$year - 1969
     mutate(lag = lag(events))
 
   belfastEast <- attacks %>%
-    filter(name == "belfast East") %>%
+    filter(name == "Belfast East") %>%
     mutate(lag = lag(events))
 
   belfastNorth <- attacks %>%
