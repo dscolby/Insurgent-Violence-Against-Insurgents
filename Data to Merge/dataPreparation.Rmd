@@ -1,7 +1,7 @@
 ---
 title: "data_preparation_script"
 author: "Darren Colby"
-date: "2/17/2021"
+date: "3/10/2021"
 purpose: "To clean and recode the Northern Ireland Loyalty Study data so that
    it can be merged with xSub data and be analyzed."
 output: html_document
@@ -242,11 +242,14 @@ final_data$year <- as.numeric(substr(final_data$date, 1,
 final_data$yearsSince1969 <- final_data$year - 1969
 ```
 
-## Add a column for government attacks per year in each constituency
+
+## Add a column for government attacks per lagged year in each constituency 
+## against civilians
 
 ```{r}
   
   attacks <- final_data %>%
+    filter(targetCiv == 1) %>%
     group_by(name, year) %>%
     summarise(events = sum(initGovt))
 
@@ -309,13 +312,14 @@ final_data$yearsSince1969 <- final_data$year - 1969
   final_data <- merge(final_data, attacks, by = c("name", "year")) 
   
   names(final_data)[names(final_data) == "lag"] <- "govtAttacks"
-  
 
 ```
 
-## Add a column for rebel attacks per year in each constituency
+## Add a column for rebel attacks per lagged year in each constituency
 ```{r}
+ 
   attacks <- final_data %>%
+    filter(targetCiv == 1) %>%
     group_by(name, year) %>%
     summarise(events = sum(initRebel))
 
@@ -375,13 +379,16 @@ final_data$yearsSince1969 <- final_data$year - 1969
                       northDown, belfastSouth, southDown) %>%
                       select(-events)
 
-  final_data <- merge(final_data, attacks, by = c("name", "year"))
+  final_data <- merge(final_data, attacks, by = c("name", "year")) 
+  
+  names(final_data)[names(final_data) == "lag"] <- "rebelAttacks"
 ```
 
-## Create a column for loyalist attacks per constituency year
+## Create a column for loyalist attacks per lagged constituency year
 
 ```{r}
   attacks <- final_data %>%
+    filter(targetCiv == 1) %>%
     group_by(name, year) %>%
     summarise(events = sum(initOther))
 
@@ -441,9 +448,40 @@ final_data$yearsSince1969 <- final_data$year - 1969
                       northDown, belfastSouth, southDown) %>%
                       select(-events)
 
-  final_data <- merge(final_data, attacks, by = c("name", "year"))
+  final_data <- merge(final_data, attacks, by = c("name", "year")) 
+  
+  names(final_data)[names(final_data) == "lag"] <- "loyalistAttacks"
 ```
 
+
+## Make a column for all government, rebel, and loyalist attacks per 
+## constituency-year
+
+```{r}
+  attacks <- final_data %>%
+    group_by(name, year) %>%
+    summarise(events = sum(initGovt))
+
+  final_data <- merge(final_data, attacks, by = c("name", "year")) 
+  
+  names(final_data)[names(final_data) == "events"] <- "govtAll"
+  
+  attacks <- final_data %>%
+    group_by(name, year) %>%
+    summarise(events = sum(initRebel))
+
+  final_data <- merge(final_data, attacks, by = c("name", "year")) 
+  
+  names(final_data)[names(final_data) == "events"] <- "rebelAll"
+  
+  attacks <- final_data %>%
+    group_by(name, year) %>%
+    summarise(events = sum(initOther))
+
+  final_data <- merge(final_data, attacks, by = c("name", "year")) 
+  
+  names(final_data)[names(final_data) == "events"] <- "loyalisttAll"
+```  
 
 ## Change the column names
 
@@ -452,7 +490,7 @@ new_names <- c("name", "year", "id", "lat", "long", "date", "areaSqKm",
                "boundary", "initGovt", "initRebel", "initCiv", "initOther",
                "targetGovt", "targetRebel", "targetCiv", "targetOther", 
                "direct", "religion", "governance", "employment", "stdLiving",
-               "clubs", "yearsSince1969", "govtAttacks", "rebelAttacks",                             "loyalistAttacks")
+               "clubs", "yearsSince1969", "govtAttacks", "rebelAttacks",                             "loyalistAttacks", "govtAll", "rebelAll", "loyalistAll")
 
 colnames(final_data) <- new_names
 ```
